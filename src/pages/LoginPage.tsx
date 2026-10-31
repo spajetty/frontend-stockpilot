@@ -2,22 +2,18 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { z } from "zod";
-import { Alert, Button, Checkbox, Input, Logo } from "../components";
+import { Alert, Button, Checkbox, GoogleSignInButton, Input, Logo } from "../components";
 import { useAuth } from "../auth/AuthContext";
+import { ROLE_LABEL } from "../auth/roles";
 import { DEMO_ACCOUNTS } from "../api/authApi";
+
+const GOOGLE_ENABLED = Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID);
 
 const schema = z.object({
   email: z.string().trim().min(1, "Enter your email address.").email("Enter a valid email address."),
   password: z.string().min(1, "Enter your password."),
 });
 type FieldErrors = Partial<Record<"email" | "password", string>>;
-
-const ROLE_LABEL = {
-  Owner: "Owner",
-  Manager: "Manager",
-  Cashier: "Cashier",
-  InventoryClerk: "Inventory clerk",
-} as const;
 
 const STATS = [
   { value: "₱2.4M", label: "Monthly sales tracked" },
@@ -26,7 +22,7 @@ const STATS = [
 ];
 
 export default function LoginPage() {
-  const { user, login } = useAuth();
+  const { user, login, loginWithGoogle } = useAuth();
   const location = useLocation();
 
   const [email, setEmail] = useState("owner@stockpilot.ph");
@@ -62,6 +58,18 @@ export default function LoginPage() {
       await login(result.data.email, result.data.password, remember);
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "Something went wrong. Try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleGoogle = async (idToken: string) => {
+    setFormError(null);
+    setSubmitting(true);
+    try {
+      await loginWithGoogle(idToken, remember);
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : "Google sign-in failed. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -132,7 +140,7 @@ export default function LoginPage() {
               size="lg"
               autoComplete="username"
               value={email}
-              onChange={(v: any) => {
+              onChange={(v) => {
                 setEmail(v);
                 setErrors((prev) => ({ ...prev, email: undefined }));
               }}
@@ -145,7 +153,7 @@ export default function LoginPage() {
               size="lg"
               autoComplete="current-password"
               value={password}
-              onChange={(v: any) => {
+              onChange={(v) => {
                 setPassword(v);
                 setErrors((prev) => ({ ...prev, password: undefined }));
               }}
@@ -167,16 +175,23 @@ export default function LoginPage() {
               <span className="h-px flex-1 bg-slate-200" /> OR <span className="h-px flex-1 bg-slate-200" />
             </div>
 
-            <Button
-              variant="outline"
-              size="lg"
-              icon="ri-google-fill"
-              iconColorClass="text-[#EA4335]"
-              disabled
-              title="Google sign-in arrives with the backend"
-            >
-              Continue with Google
-            </Button>
+            {GOOGLE_ENABLED ? (
+              <GoogleSignInButton
+                onCredential={handleGoogle}
+                onError={() => setFormError("Google sign-in was cancelled or failed. Please try again.")}
+              />
+            ) : (
+              <Button
+                variant="outline"
+                size="lg"
+                icon="ri-google-fill"
+                iconColorClass="text-[#EA4335]"
+                disabled
+                title="Set VITE_GOOGLE_CLIENT_ID to enable Google sign-in"
+              >
+                Continue with Google
+              </Button>
+            )}
           </form>
 
           <div className="mt-8">
