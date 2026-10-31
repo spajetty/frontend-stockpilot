@@ -1,7 +1,12 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "./AuthContext";
+import type { Role } from "./types";
 
-export default function ProtectedRoute() {
+interface ProtectedRouteProps {
+  roles?: Role[]; // when set, only these roles may open the nested routes
+}
+
+export default function ProtectedRoute({ roles }: ProtectedRouteProps) {
   const { user, loading } = useAuth();
   const location = useLocation();
 
@@ -12,6 +17,14 @@ export default function ProtectedRoute() {
       </div>
     );
   }
+
   if (!user) return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+
+  // First login: nothing else is reachable until setup is finished
+  if (user.isFirstLogin && location.pathname !== "/setup") return <Navigate to="/setup" replace />;
+  if (!user.isFirstLogin && location.pathname === "/setup") return <Navigate to="/" replace />;
+
+  if (roles && !roles.includes(user.role)) return <Navigate to="/" replace />;
+
   return <Outlet />;
 }
