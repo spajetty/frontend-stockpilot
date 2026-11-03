@@ -11,10 +11,9 @@ export const usersApi = {
     }
   },
 
-  // The API generates the temporary password and emails it; it is never sent back here
-  async invite(email: string, role: Role): Promise<StaffMember> {
+  async invite(email: string, role: Role, storeId: number): Promise<StaffMember> {
     try {
-      const { data } = await api.post<StaffMember>("/users", { email, role });
+      const { data } = await api.post<StaffMember>("/users", { email, role, storeId });
       return data;
     } catch (err) {
       throw apiError(err, "Couldn't create the account. Please try again.");
