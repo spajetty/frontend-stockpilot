@@ -1,15 +1,19 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { authApi } from "../api/authApi";
+import SignOutOverlay from "../components/SignOutOverlay";
 import { tokenStorage } from "./tokenStorage";
 import type { User } from "./types";
 
+const MIN_SIGNOUT_MS = 3000; 
+
 interface AuthState {
   user: User | null;
-  loading: boolean; // true while restoring a saved session
+  loading: boolean; 
+  signingOut: boolean;
   login: (email: string, password: string, remember: boolean) => Promise<void>;
   loginWithGoogle: (idToken: string, remember: boolean) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -17,6 +21,8 @@ const AuthContext = createContext<AuthState | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [signingOut, setSigningOut] = useState(false);
+  const signingOutRef = useRef(false); 
 
   useEffect(() => {
     if (!tokenStorage.get()) {
@@ -42,16 +48,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(res.user);
   }, []);
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    if (signingOutRef.current) return;
+    signingOutRef.current = true;
+    setSigningOut(true);
+
+    await new Promise((resolve) => setTimeout(resolve, MIN_SIGNOUT_MS));
+
     tokenStorage.clear();
     setUser(null);
+    setSigningOut(false);
+    signingOutRef.current = false;
   }, []);
 
   const value = useMemo(
-    () => ({ user, loading, login, loginWithGoogle, logout }),
-    [user, loading, login, loginWithGoogle, logout],
+    () => ({ user, loading, signingOut, login, loginWithGoogle, logout }),
+    [user, loading, signingOut, login, loginWithGoogle, logout],
   );
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+      {signingOut && <SignOutOverlay />}
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {
