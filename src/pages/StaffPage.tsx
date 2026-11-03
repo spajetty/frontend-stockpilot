@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import { Alert, AppHeader, Button, Input, Select } from "../components";
 import type { SelectOption } from "../components";
 import { usersApi } from "../api/usersApi";
 import { INVITABLE_ROLES, ROLE_LABEL } from "../auth/roles";
 import type { Role, StaffMember } from "../auth/types";
+import { useStores } from "../stores/StoreContext";
 
 const ROLE_OPTIONS: SelectOption[] = INVITABLE_ROLES.map((r) => ({ value: r, label: ROLE_LABEL[r] }));
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -19,13 +20,21 @@ function StatusBadge({ member }: { member: StaffMember }) {
 }
 
 export default function StaffPage() {
+  const { stores } = useStores();
+  const storeOptions: SelectOption[] = useMemo(
+    () => stores.map((s) => ({ value: String(s.id), label: s.name })),
+    [stores],
+  );
+
   const [members, setMembers] = useState<StaffMember[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("");
+  const [storeId, setStoreId] = useState("");
   const [emailError, setEmailError] = useState<string>();
   const [roleError, setRoleError] = useState<string>();
+  const [storeError, setStoreError] = useState<string>();
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -51,16 +60,19 @@ export default function StaffPage() {
     const trimmed = email.trim();
     const emailProblem = !trimmed ? "Enter an email address." : !EMAIL_PATTERN.test(trimmed) ? "Enter a valid email address." : undefined;
     const roleProblem = role ? undefined : "Choose a role.";
+    const storeProblem = storeId ? undefined : "Choose a store.";
     setEmailError(emailProblem);
     setRoleError(roleProblem);
-    if (emailProblem || roleProblem) return;
+    setStoreError(storeProblem);
+    if (emailProblem || roleProblem || storeProblem) return;
 
     setSubmitting(true);
     try {
-      const created = await usersApi.invite(trimmed, role as Role);
+      const created = await usersApi.invite(trimmed, role as Role, Number(storeId));
       setSuccess(`Invitation sent to ${created.email}. They can sign in with the emailed temporary password, or with Google using this email address.`);
       setEmail("");
       setRole("");
+      // The store stays selected so several employees can be added to the same branch in a row.
       await load();
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "Couldn't create the account.");
@@ -75,7 +87,7 @@ export default function StaffPage() {
 
       <main className="mx-auto max-w-5xl px-6 py-10">
         <h1 className="text-3xl font-semibold tracking-tight">Staff accounts</h1>
-        <p className="mt-1 text-slate-500">Add an employee by email and role. We'll email them a temporary password.</p>
+        <p className="mt-1 text-slate-500">Add an employee by email, role and store. We'll email them a temporary password.</p>
 
         <section className="mt-8 rounded-xl border border-slate-200 bg-white p-6">
           <h2 className="text-lg font-semibold">Add an account</h2>
@@ -83,7 +95,7 @@ export default function StaffPage() {
             {formError && <Alert variant="error">{formError}</Alert>}
             {success && <Alert variant="success">{success}</Alert>}
 
-            <div className="grid gap-5 sm:grid-cols-[1fr_14rem]">
+            <div className="grid gap-5 sm:grid-cols-[1fr_14rem_14rem]">
               <Input
                 label="Employee email"
                 type="email"
@@ -99,6 +111,13 @@ export default function StaffPage() {
                 value={role}
                 onChange={(v) => { setRole(v); setRoleError(undefined); }}
                 error={roleError}
+              />
+              <Select
+                label="Store"
+                options={storeOptions}
+                value={storeId}
+                onChange={(v) => { setStoreId(v); setStoreError(undefined); }}
+                error={storeError}
               />
             </div>
 
@@ -138,6 +157,7 @@ export default function StaffPage() {
                   <tr>
                     <th className="px-6 py-3 font-medium">Name</th>
                     <th className="px-6 py-3 font-medium">Role</th>
+                    <th className="px-6 py-3 font-medium">Store</th>
                     <th className="px-6 py-3 font-medium">Status</th>
                     <th className="px-6 py-3 font-medium">Added</th>
                   </tr>
@@ -150,6 +170,7 @@ export default function StaffPage() {
                         <p className="text-slate-500">{m.email}</p>
                       </td>
                       <td className="px-6 py-4">{ROLE_LABEL[m.role]}</td>
+                      <td className="px-6 py-4">{m.storeName ?? "All stores"}</td>
                       <td className="px-6 py-4"><StatusBadge member={m} /></td>
                       <td className="px-6 py-4 text-slate-500">
                         {new Date(m.createdAt).toLocaleDateString("en-PH", { year: "numeric", month: "short", day: "numeric" })}
