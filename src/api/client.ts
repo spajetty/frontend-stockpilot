@@ -1,5 +1,6 @@
 import axios from "axios";
 import { tokenStorage } from "../auth/tokenStorage";
+import { getStoredStoreId } from "../stores/storeSelection";
 
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
@@ -9,6 +10,11 @@ export const api = axios.create({
 api.interceptors.request.use((config) => {
   const token = tokenStorage.get();
   if (token) config.headers.Authorization = `Bearer ${token}`;
+
+  // The owner's selected store. The API ignores this header for everyone else.
+  const storeId = getStoredStoreId();
+  if (storeId !== null) config.headers["X-Store-Id"] = String(storeId);
+
   return config;
 });
 
