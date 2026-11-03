@@ -31,6 +31,8 @@ export interface StaffMember {
   fullName: string;
   role: Role;
   isFirstLogin: boolean;
+  storeId: number | null;
+  storeName: string | null;
   isActive: boolean;
   createdAt: string;
 }
