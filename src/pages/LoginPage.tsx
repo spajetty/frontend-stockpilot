@@ -112,10 +112,6 @@ export default function LoginPage() {
               </div>
             ))}
           </dl>
-          <p className="mt-20 flex items-center gap-2 text-sm text-white/85">
-            <i className="ri-information-line" aria-hidden="true" />
-            Frontend prototype — no real authentication or payments.
-          </p>
         </div>
       </aside>
 
@@ -124,12 +120,9 @@ export default function LoginPage() {
         <div className="w-full max-w-[470px]">
           <div className="mb-8 lg:hidden">
             <Logo />
-          </div>
+          </div> 
 
           <h2 className="text-[32px] font-semibold tracking-tight">Sign in to your store</h2>
-          <p className="mt-1 text-[17px] leading-snug text-slate-500">
-            Use a demo account below. Every account uses the password <strong className="text-slate-600">demo1234</strong>.
-          </p>
 
           <form onSubmit={handleSubmit} noValidate className="mt-8 space-y-5">
             {formError && <Alert variant="error">{formError}</Alert>}
@@ -194,6 +187,8 @@ export default function LoginPage() {
             )}
           </form>
 
+          {/* 
+
           <div className="mt-8">
             <p className="mb-2 text-sm font-medium text-slate-600">Demo accounts</p>
             <div className="grid grid-cols-2 gap-2">
@@ -216,6 +211,8 @@ export default function LoginPage() {
             <br />
             No real payments, refunds, or inventory movements reach a server.
           </p>
+          
+          */}
         </div>
       </main>
     </div>
