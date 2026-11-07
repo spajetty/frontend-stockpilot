@@ -7,6 +7,7 @@ export interface User {
   fullName: string; // display name: first + surname, or the email until setup is done
   role: Role;
   isFirstLogin: boolean; // true until personal info and a new password are saved
+  storeId: number | null; // null since owner dont have store 
 }
 
 // Same shape the ASP.NET Core API returns from POST /api/auth/login and /api/auth/google
