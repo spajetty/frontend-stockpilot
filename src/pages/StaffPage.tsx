@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
-import { Alert, AppHeader, Button, Input, Select } from "../components";
+import { Alert, Button, Input, Select } from "../components";
 import type { SelectOption } from "../components";
 import { usersApi } from "../api/usersApi";
 import { INVITABLE_ROLES, ROLE_LABEL } from "../auth/roles";
@@ -83,7 +83,6 @@ export default function StaffPage() {
 
   return (
     <div className="min-h-screen">
-      <AppHeader />
 
       <main className="mx-auto max-w-5xl px-6 py-10">
         <h1 className="text-3xl font-semibold tracking-tight">Staff accounts</h1>
