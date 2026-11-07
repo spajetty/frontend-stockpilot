@@ -40,7 +40,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { label: 'Dashboard', path: '/dashboard', icon: 'ri-dashboard-line', tag: '01', roles: [O, M] },
       { label: 'Products', path: '/products', icon: 'ri-price-tag-3-line', tag: '02', roles: [O, M, I] },
       { label: 'Inventory', path: '/inventory', icon: 'ri-inbox-archive-line', alertBadge: true, roles: [O, M, I] },
-      { label: 'Point of Sale', path: '/pos', icon: 'ri-store-2-line', tag: '04', roles: [O, M, C] },
+      { label: 'Point of Sale', path: '/pos', icon: 'ri-store-2-line', tag: '04', roles: [M, C] },
       { label: 'Sales & Reports', path: '/sales', icon: 'ri-bar-chart-box-line', tag: '05', roles: [O, M, C] },
     ],
   },
@@ -72,6 +72,6 @@ export function getHomePath(role: RoleKey | null): string {
   return getNavForRole(role)[0]?.items[0]?.path ?? '/login';
 }
 
-export const CAN_START_SALE: RoleKey[] = [O, M, C];
+export const CAN_START_SALE: RoleKey[] = [M, C];
 
 export const STORE_NAME = 'StockPilot Demo Store';
