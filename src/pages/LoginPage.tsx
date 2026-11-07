@@ -4,8 +4,6 @@ import { Navigate, useLocation } from "react-router-dom";
 import { z } from "zod";
 import { Alert, Button, Checkbox, GoogleSignInButton, Input, Logo } from "../components";
 import { useAuth } from "../auth/AuthContext";
-import { ROLE_LABEL } from "../auth/roles";
-import { DEMO_ACCOUNTS } from "../api/authApi";
 
 const GOOGLE_ENABLED = Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID);
 
@@ -73,13 +71,6 @@ export default function LoginPage() {
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const fillDemo = (demoEmail: string) => {
-    setEmail(demoEmail);
-    setPassword("demo1234");
-    setErrors({});
-    setFormError(null);
   };
 
   return (
