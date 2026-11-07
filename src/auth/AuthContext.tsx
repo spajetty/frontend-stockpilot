@@ -4,6 +4,7 @@ import { authApi } from "../api/authApi";
 import SignOutOverlay from "../components/SignOutOverlay";
 import { tokenStorage } from "./tokenStorage";
 import type { User } from "./types";
+import { queryClient } from "../lib/queryClient";
 
 const MIN_SIGNOUT_MS = 3000; 
 
@@ -56,6 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await new Promise((resolve) => setTimeout(resolve, MIN_SIGNOUT_MS));
 
     tokenStorage.clear();
+    queryClient.clear(); 
     setUser(null);
     setSigningOut(false);
     signingOutRef.current = false;
