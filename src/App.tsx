@@ -10,15 +10,16 @@ import LoginPage from "./pages/LoginPage";
 import SetupPage from "./pages/SetupPage";
 import StaffPage from "./pages/StaffPage";
 import { StoreProvider } from "./stores/StoreContext";
+import PosPage from "./pages/pos/PosPage";
 import {
   AiInsightsPage,
   DashboardPage,
   InventoryPage,
   PaymentsPage,
-  PosPage,
   ProductsPage,
   SalesReportsPage,
 } from "./pages/placeholders";
+
 
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
 
