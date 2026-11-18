@@ -11,13 +11,13 @@ import SetupPage from "./pages/SetupPage";
 import StaffPage from "./pages/StaffPage";
 import { StoreProvider } from "./stores/StoreContext";
 import PosPage from "./pages/pos/PosPage";
+import SalesPage from "./pages/sales/SalesPage";  
 import {
   AiInsightsPage,
   DashboardPage,
   InventoryPage,
   PaymentsPage,
   ProductsPage,
-  SalesReportsPage,
 } from "./pages/placeholders";
 
 
@@ -28,7 +28,7 @@ const PAGES: Record<string, ReactElement> = {
   "/products": <ProductsPage />,
   "/inventory": <InventoryPage />,
   "/pos": <PosPage />,
-  "/sales": <SalesReportsPage />,
+  "/sales": <SalesPage />,
   "/ai-insights": <AiInsightsPage />,
   "/staff": <StaffPage />,
   "/payments": <PaymentsPage />,
