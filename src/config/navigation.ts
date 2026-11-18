@@ -21,6 +21,7 @@ export interface NavItem {
   roles: RoleKey[];
   tag?: string; 
   alertBadge?: boolean;
+  roleLabels?: Partial<Record<RoleKey, string>>;
 }
 
 export interface NavSection {
@@ -41,8 +42,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { label: 'Products', path: '/products', icon: 'ri-price-tag-3-line', tag: '02', roles: [O, M, I] },
       { label: 'Inventory', path: '/inventory', icon: 'ri-inbox-archive-line', alertBadge: true, roles: [O, M, I] },
       { label: 'Point of Sale', path: '/pos', icon: 'ri-store-2-line', tag: '04', roles: [M, C] },
-      { label: 'Sales & Reports', path: '/sales', icon: 'ri-bar-chart-box-line', tag: '05', roles: [O, M, C] },
-    ],
+      { label: 'Sales & Reports', path: '/sales', icon: 'ri-bar-chart-box-line', tag: '05', roles: [O, M, C], roleLabels: { manager: 'Sales', cashier: 'Sales' } },    ],
   },
   {
     title: 'Intelligence',
@@ -61,11 +61,18 @@ export const NAV_SECTIONS: NavSection[] = [
 
 export const ALL_NAV_ITEMS: NavItem[] = NAV_SECTIONS.flatMap((s) => s.items);
 
+export function labelFor(item: NavItem, role: RoleKey | null): string {
+  return (role && item.roleLabels?.[role]) || item.label;
+}
+
 export function getNavForRole(role: RoleKey | null): NavSection[] {
   if (!role) return [];
-  return NAV_SECTIONS.map((s) => ({ ...s, items: s.items.filter((i) => i.roles.includes(role)) })).filter(
-    (s) => s.items.length > 0,
-  );
+  return NAV_SECTIONS.map((s) => ({
+    ...s,
+    items: s.items
+      .filter((i) => i.roles.includes(role))
+      .map((i) => ({ ...i, label: labelFor(i, role) })),
+  })).filter((s) => s.items.length > 0);
 }
 
 export function getHomePath(role: RoleKey | null): string {
