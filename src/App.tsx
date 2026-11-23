@@ -12,12 +12,12 @@ import StaffPage from "./pages/StaffPage";
 import { StoreProvider } from "./stores/StoreContext";
 import PosPage from "./pages/pos/PosPage";
 import SalesPage from "./pages/sales/SalesPage";  
+import ProductsPage from "./pages/products/ProductsPage";
 import {
   AiInsightsPage,
   DashboardPage,
   InventoryPage,
   PaymentsPage,
-  ProductsPage,
 } from "./pages/placeholders";
 
 
