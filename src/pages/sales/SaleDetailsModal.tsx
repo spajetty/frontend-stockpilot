@@ -1,3 +1,4 @@
+//src\pages\sales\SaleDetailsModal.tsx
 import { useState } from 'react';
 import { Button, Modal } from '../../components';
 import { useAuth } from '../../auth/AuthContext';
