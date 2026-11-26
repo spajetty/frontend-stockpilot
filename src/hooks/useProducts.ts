@@ -48,7 +48,15 @@ export function usePendingProducts(enabled: boolean) {
   return useQuery({
     queryKey: productsKeys.pending(scope),
     queryFn: () =>
-      fetchProducts({ page: 1, pageSize: 50, search: '', categoryId: null, status: 'pending', sort: 'newest' }),
+      fetchProducts({
+        page: 1,
+        pageSize: 50,
+        search: '',
+        categoryId: null,
+        status: 'pending',
+        sortBy: 'name',
+        sortDir: 'asc',
+      }),
     enabled,
     staleTime: STALE,
   });
