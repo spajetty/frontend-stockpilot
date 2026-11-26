@@ -7,7 +7,7 @@ import { formatPeso } from '../../lib/format';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import { useStores } from '../../stores/StoreContext';
 import { PRODUCTS_PAGE_SIZE, downloadProductsCsv } from '../../api/productsApi';
-import type { ProductSort, ProductStatusFilter } from '../../api/productsApi';
+import type { ProductSortBy, ProductStatusFilter, SortDir } from '../../api/productsApi';
 import { useCategories, usePendingProducts, useProducts } from '../../hooks/useProducts';
 import { ProductThumb, StatusBadge, StockCell } from './ProductBadges';
 import ProductDetailsModal from './ProductDetailsModal';
@@ -16,14 +16,6 @@ import type { FormTarget } from './ProductFormModal';
 import ProductStatusModal from './ProductStatusModal';
 import type { StatusTarget } from './ProductStatusModal';
 import ApprovalsModal from './ApprovalsModal';
-
-const SORT_OPTIONS: SelectOption[] = [
-  { value: 'name_asc', label: 'Name (A–Z)' },
-  { value: 'name_desc', label: 'Name (Z–A)' },
-  { value: 'price_asc', label: 'Price (low to high)' },
-  { value: 'price_desc', label: 'Price (high to low)' },
-  { value: 'newest', label: 'Newest first' },
-];
 
 const BASE_STATUS_OPTIONS: SelectOption[] = [
   { value: 'all', label: 'All statuses' },
@@ -38,6 +30,43 @@ const REVIEW_STATUS_OPTIONS: SelectOption[] = [
 
 const th = 'px-4 py-3 font-semibold uppercase tracking-wide text-slate-500';
 
+interface SortHeaderProps {
+  label: string;
+  col: ProductSortBy;
+  sortBy: ProductSortBy;
+  sortDir: SortDir;
+  onSort: (col: ProductSortBy) => void;
+  align?: 'left' | 'right';
+}
+
+function SortHeader({ label, col, sortBy, sortDir, onSort, align = 'left' }: SortHeaderProps) {
+  const active = sortBy === col;
+  const icon = !active
+    ? 'ri-expand-up-down-line'
+    : sortDir === 'asc'
+      ? 'ri-arrow-up-s-line'
+      : 'ri-arrow-down-s-line';
+
+  return (
+    <th
+      aria-sort={active ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
+      className={cx('px-4 py-3 font-semibold', align === 'right' ? 'text-right' : 'text-left')}
+    >
+      <button
+        type="button"
+        onClick={() => onSort(col)}
+        className={cx(
+          'inline-flex cursor-pointer items-center gap-1 uppercase tracking-wide transition-colors hover:text-brand',
+          active ? 'text-brand' : 'text-slate-500',
+        )}
+      >
+        {label}
+        <i className={cx(icon, active ? 'text-brand' : 'text-slate-400')} aria-hidden="true" />
+      </button>
+    </th>
+  );
+}
+
 export default function ProductsPage() {
   const { user } = useAuth();
   const { activeStore } = useStores();
@@ -49,7 +78,8 @@ export default function ProductsPage() {
   const search = useDebouncedValue(searchInput.trim(), 300);
   const [categoryId, setCategoryId] = useState('all');
   const [status, setStatus] = useState<ProductStatusFilter>('all');
-  const [sort, setSort] = useState<ProductSort>('name_asc');
+  const [sortBy, setSortBy] = useState<ProductSortBy>('name');
+  const [sortDir, setSortDir] = useState<SortDir>('asc');
 
   const [viewId, setViewId] = useState<number | null>(null);
   const [form, setForm] = useState<FormTarget | null>(null);
@@ -66,7 +96,8 @@ export default function ProductsPage() {
     search,
     categoryId: catId,
     status,
-    sort,
+    sortBy,
+    sortDir,
   });
   const { data: categories = [] } = useCategories();
   const { data: pending } = usePendingProducts(isOwner);
@@ -93,11 +124,20 @@ export default function ProductsPage() {
   ];
   const statusOptions = canManage ? [...BASE_STATUS_OPTIONS, ...REVIEW_STATUS_OPTIONS] : BASE_STATUS_OPTIONS;
 
+  const onSort = (col: ProductSortBy) => {
+    if (col === sortBy) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    else {
+      setSortBy(col);
+      setSortDir(col === 'name' || col === 'sku' ? 'asc' : 'desc');
+    }
+    setPage(1);
+  };
+
   const onExport = async () => {
     setExporting(true);
     setExportError(null);
     try {
-      await downloadProductsCsv({ search, categoryId: catId, status, sort });
+      await downloadProductsCsv({ search, categoryId: catId, status, sortBy, sortDir });
     } catch (e) {
       setExportError(e instanceof Error ? e.message : "Couldn't export products.");
     } finally {
@@ -206,16 +246,6 @@ export default function ProductsPage() {
               setPage(1);
             }}
           />
-          <Select
-            label="Sort by"
-            className="min-w-0 flex-1"
-            value={sort}
-            options={SORT_OPTIONS}
-            onChange={(v) => {
-              setSort(v as ProductSort);
-              setPage(1);
-            }}
-          />
         </div>
 
         <p className="whitespace-nowrap pb-2.5 text-sm text-slate-500 lg:pl-2">
@@ -229,13 +259,13 @@ export default function ProductsPage() {
           <table className="w-full min-w-[1000px] text-sm">
             <thead className="border-b border-slate-200 bg-slate-50 text-xs">
               <tr>
-                <th className={cx(th, 'text-left')}>Product</th>
-                <th className={cx(th, 'text-left')}>SKU / Barcode</th>
+                <SortHeader label="Product" col="name" sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
+                <SortHeader label="SKU / Barcode" col="sku" sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
                 <th className={cx(th, 'text-left')}>Category</th>
-                <th className={cx(th, 'text-right')}>Cost</th>
-                <th className={cx(th, 'text-right')}>Price</th>
-                <th className={cx(th, 'text-right')}>Margin</th>
-                <th className={cx(th, 'text-right')}>Stock</th>
+                <SortHeader label="Cost" col="cost" sortBy={sortBy} sortDir={sortDir} onSort={onSort} align="right" />
+                <SortHeader label="Price" col="price" sortBy={sortBy} sortDir={sortDir} onSort={onSort} align="right" />
+                <SortHeader label="Margin" col="margin" sortBy={sortBy} sortDir={sortDir} onSort={onSort} align="right" />
+                <SortHeader label="Stock" col="stock" sortBy={sortBy} sortDir={sortDir} onSort={onSort} align="right" />
                 <th className={cx(th, 'text-left')}>Status</th>
                 <th className={cx(th, 'text-right')}>Actions</th>
               </tr>

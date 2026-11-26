@@ -13,7 +13,6 @@ interface Props {
 const textarea =
   'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition-colors duration-200 placeholder:text-slate-400 hover:border-slate-300 focus:border-brand focus:ring-4 focus:ring-brand/15';
 
-// Owner only. Lists the products managers submitted and lets the owner approve or reject each one.
 export default function ApprovalsModal({ open, onClose, onDone }: Props) {
   const { data, isLoading, isError } = usePendingProducts(open);
   const approve = useApproveProduct();

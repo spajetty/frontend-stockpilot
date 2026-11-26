@@ -16,6 +16,10 @@ interface Props {
   onCreate: (name: string) => Promise<LookupChoice>;
   placeholder?: string;
   className?: string;
+  required?: boolean;
+  hint?: string;
+  error?: string;
+  onTouched?: () => void; // called when the list closes, so the form knows the field was visited
 }
 
 // A search box that doubles as a dropdown. When nothing matches what was typed,
@@ -29,6 +33,10 @@ export default function CreatableSelect({
   onCreate,
   placeholder,
   className,
+  required = false,
+  hint,
+  error: fieldError,
+  onTouched,
 }: Props) {
   const id = useId();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -54,6 +62,7 @@ export default function CreatableSelect({
     setOpen(false);
     setQuery(null);
     setError('');
+    onTouched?.();
   };
 
   useEffect(() => {
@@ -63,11 +72,12 @@ export default function CreatableSelect({
         setOpen(false);
         setQuery(null);
         setError('');
+        onTouched?.();
       }
     };
     document.addEventListener('mousedown', onPointerDown);
     return () => document.removeEventListener('mousedown', onPointerDown);
-  }, [open]);
+  }, [open, onTouched]);
 
   const pick = (v: string) => {
     onChange(v);
@@ -113,6 +123,7 @@ export default function CreatableSelect({
     <div ref={rootRef} className={cx('relative', className)}>
       <label htmlFor={id} className="mb-1.5 block text-sm font-medium text-slate-700">
         {label}
+        {required && <span className="text-red-500"> *</span>}
       </label>
 
       <div className="relative">
@@ -121,6 +132,7 @@ export default function CreatableSelect({
           type="text"
           role="combobox"
           aria-expanded={open}
+          aria-invalid={!!fieldError}
           aria-controls={`${id}-list`}
           autoComplete="off"
           value={text}
@@ -132,7 +144,12 @@ export default function CreatableSelect({
             setError('');
           }}
           onKeyDown={onKeyDown}
-          className="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-4 pr-10 text-sm text-slate-900 outline-none transition-colors duration-200 placeholder:text-slate-400 hover:border-slate-300 focus:border-brand focus:ring-4 focus:ring-brand/15"
+          className={cx(
+            'w-full rounded-lg border bg-white py-2.5 pl-4 pr-10 text-sm text-slate-900 outline-none transition-colors duration-200 placeholder:text-slate-400 focus:ring-4',
+            fieldError
+              ? 'border-red-400 focus:border-red-500 focus:ring-red-500/10'
+              : 'border-slate-200 hover:border-slate-300 focus:border-brand focus:ring-brand/15',
+          )}
         />
         {value && query === null ? (
           <button
@@ -195,6 +212,15 @@ export default function CreatableSelect({
 
           {error && <li className="px-3 py-2 text-xs text-red-500">{error}</li>}
         </ul>
+      )}
+
+      {fieldError ? (
+        <p className="mt-1.5 flex items-start gap-1 text-xs text-red-500">
+          <i className="ri-error-warning-line mt-[1px] shrink-0" aria-hidden="true" />
+          <span className="min-w-0 flex-1 break-words">{fieldError}</span>
+        </p>
+      ) : (
+        hint && <p className="mt-1.5 text-xs text-slate-500">{hint}</p>
       )}
     </div>
   );
