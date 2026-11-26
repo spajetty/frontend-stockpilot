@@ -1,10 +1,12 @@
+import axios from 'axios';
 import { api, apiError } from './client';
 
 export const PRODUCTS_PAGE_SIZE = 8;
 
 export type ProductStatusName = 'Active' | 'Inactive' | 'Pending' | 'Rejected';
 export type ProductStatusFilter = 'all' | 'active' | 'inactive' | 'pending' | 'rejected';
-export type ProductSort = 'name_asc' | 'name_desc' | 'price_asc' | 'price_desc' | 'newest';
+export type ProductSortBy = 'name' | 'sku' | 'cost' | 'price' | 'margin' | 'stock';
+export type SortDir = 'asc' | 'desc';
 
 export interface ProductsQueryParams {
   page: number;
@@ -12,7 +14,8 @@ export interface ProductsQueryParams {
   search: string;
   categoryId: number | null;
   status: ProductStatusFilter;
-  sort: ProductSort;
+  sortBy: ProductSortBy;
+  sortDir: SortDir;
 }
 
 export interface ProductListItem {
@@ -72,7 +75,6 @@ export interface ProductDetail extends ProductListItem {
 
 export interface ProductFormValues {
   name: string;
-  sku: string;
   barcode: string | null;
   categoryId: number | null;
   supplierId: number | null;
@@ -84,9 +86,15 @@ export interface ProductFormValues {
   availableInPos: boolean;
 }
 
+export interface StoreStock {
+  storeId: number;
+  quantity: number;
+}
+
+// The SKU isn't sent: the server generates it from the category
 export interface CreateProductRequest extends ProductFormValues {
-  openingStock: number;
-  storeId: number | null; // owner only
+  openingStock: number; // manager: opening stock for their own store
+  storeStocks: StoreStock[]; // owner: each selected store with its own opening stock
 }
 
 export interface UpdateProductRequest extends ProductFormValues {
@@ -107,11 +115,31 @@ export const productsKeys = {
   suppliers: ['suppliers'] as const,
 };
 
+// Which form field a duplicate was found in, with the message to show under it
+export type ProductFieldErrors = Partial<Record<'name' | 'barcode' | 'imageUrl', string>>;
+
+// Thrown when the server finds the product already exists (HTTP 409 with per-field messages)
+export class ProductConflictError extends Error {
+  fields: ProductFieldErrors;
+
+  constructor(message: string, fields: ProductFieldErrors) {
+    super(message);
+    this.name = 'ProductConflictError';
+    this.fields = fields;
+  }
+}
+
 // Turns any axios failure into an Error with a message that's safe to show
 async function call<T>(run: () => Promise<{ data: T }>, fallback: string): Promise<T> {
   try {
     return (await run()).data;
   } catch (err) {
+    if (axios.isAxiosError(err)) {
+      const data = err.response?.data as { message?: string; fields?: ProductFieldErrors } | undefined;
+      if (data?.fields && Object.keys(data.fields).length > 0) {
+        throw new ProductConflictError(data.message ?? fallback, data.fields);
+      }
+    }
     throw apiError(err, fallback);
   }
 }
@@ -121,7 +149,8 @@ function listParams(p: Omit<ProductsQueryParams, 'page' | 'pageSize'>) {
     search: p.search || undefined,
     categoryId: p.categoryId ?? undefined,
     status: p.status === 'all' ? undefined : p.status,
-    sort: p.sort,
+    sortBy: p.sortBy,
+    sortDir: p.sortDir,
   };
 }
 
@@ -154,6 +183,26 @@ export const approveProduct = (id: number) =>
 
 export const rejectProduct = (id: number, reason: string) =>
   call(() => api.post<ProductDetail>(`/products/${id}/reject`, { reason }), "Couldn't reject the product.");
+
+// Checks name, barcode and image URL against the rest of the catalogue while the user types
+export const fetchProductDuplicates = (q: {
+  name: string;
+  barcode: string;
+  imageUrl: string;
+  excludeId?: number;
+}) =>
+  call(
+    () =>
+      api.get<{ fields: ProductFieldErrors }>('/products/check-duplicates', {
+        params: {
+          name: q.name || undefined,
+          barcode: q.barcode || undefined,
+          imageUrl: q.imageUrl || undefined,
+          excludeId: q.excludeId,
+        },
+      }),
+    "Couldn't check for duplicates.",
+  ).then((r) => r.fields);
 
 export const fetchCategories = () =>
   call(() => api.get<LookupOption[]>('/categories'), "Couldn't load categories.");
